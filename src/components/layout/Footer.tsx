@@ -1,5 +1,6 @@
 import React from 'react';
 import { Heart, ArrowUp, Code, Camera, Briefcase, type LucideIcon } from 'lucide-react';
+import { Link } from 'react-router-dom';
 import { AnimatePresence, motion } from 'framer-motion';
 import { siteConfig } from '../../data/config';
 
@@ -74,6 +75,15 @@ export const Footer: React.FC = () => {
           <div className="text-[10px] uppercase tracking-[0.2em] text-linen-100/40 flex items-center gap-2">
             Made with <Heart size={10} className="fill-forest-400 text-forest-400 animate-pulse" /> in the hills
           </div>
+          
+          <Link
+            to="/admin/login"
+            style={{ fontSize: '10px', color: '#9C8A6E', opacity: 0 }}
+            className="hover:opacity-100 transition-opacity duration-300 mt-2"
+            aria-label="Admin login"
+          >
+            admin
+          </Link>
         </div>
       </div>
 

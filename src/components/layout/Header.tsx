@@ -2,9 +2,10 @@ import React from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { Disclosure } from '@headlessui/react';
 import { motion, AnimatePresence, useReducedMotion } from 'framer-motion';
-import { Sun, Moon, Menu, X } from 'lucide-react';
+import { Sun, Moon, Menu, X, User } from 'lucide-react';
 import { siteConfig } from '../../data/config';
 import { useTheme } from '../../hooks/useTheme';
+import { useAuth } from '../../context/AuthContext';
 import { cn } from '../../utils/cn';
 
 const navLinks = [
@@ -17,6 +18,7 @@ const navLinks = [
 export const Header: React.FC = () => {
   const { pathname } = useLocation();
   const { dark, toggle } = useTheme();
+  const { isAdmin, admin } = useAuth();
   const shouldReduceMotion = useReducedMotion();
 
   return (
@@ -57,6 +59,22 @@ export const Header: React.FC = () => {
 
               {/* Right Side Actions */}
               <div className="flex items-center gap-4">
+                {isAdmin && (
+                  <span 
+                    className="hidden md:inline-block"
+                    style={{
+                      fontSize: '11px',
+                      fontFamily: 'DM Sans',
+                      color: '#9C8A6E',
+                      padding: '2px 8px',
+                      border: '1px solid #C4B89A',
+                      borderRadius: '20px',
+                    }}
+                  >
+                    {admin?.name}
+                  </span>
+                )}
+
                 <button
                   onClick={toggle}
                   aria-label="Toggle dark mode"
@@ -64,6 +82,14 @@ export const Header: React.FC = () => {
                 >
                   {dark ? <Sun size={20} /> : <Moon size={20} />}
                 </button>
+
+                <Link
+                  to="/admin/login"
+                  aria-label="Admin login"
+                  className="p-2 rounded-full hover:bg-forest-100 dark:hover:bg-forest-900 text-forest-700 dark:text-forest-300 transition-colors focus-visible:ring-2 focus-visible:ring-forest-400 focus-visible:outline-none"
+                >
+                  <User size={20} />
+                </Link>
 
                 {/* Mobile Menu Button */}
                 <Disclosure.Button 

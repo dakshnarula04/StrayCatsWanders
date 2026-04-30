@@ -1,18 +1,45 @@
+import { useState } from 'react';
 import { Dialog } from '@headlessui/react';
 import { motion, AnimatePresence, useReducedMotion } from 'framer-motion';
-import { X } from 'lucide-react';
+import { X, Trash2, Loader2 } from 'lucide-react';
+import { journalApi } from '../services/journalApi';
+import { useAuth } from '../context/AuthContext';
 import type { JournalEntry } from '../types';
 
 interface JournalLightboxProps {
   entry: JournalEntry | null;
   onClose: () => void;
+  onDelete: (id: string) => void;
 }
 
 /**
  * An accessible modal lightbox for viewing a single journal entry in detail.
+ * Includes a delete action with confirmation.
  */
-export const JournalLightbox: React.FC<JournalLightboxProps> = ({ entry, onClose }) => {
+export const JournalLightbox: React.FC<JournalLightboxProps> = ({ entry, onClose, onDelete }) => {
   const shouldReduceMotion = useReducedMotion();
+  const { isAdmin, accessToken } = useAuth();
+  const [deleting, setDeleting] = useState(false);
+  const [confirmDelete, setConfirmDelete] = useState(false);
+
+  const handleDelete = async () => {
+    if (!entry || !accessToken) return;
+    setDeleting(true);
+    try {
+      await journalApi.delete(entry.id, accessToken);
+      onDelete(entry.id);
+    } catch (e: any) {
+      console.error('Delete failed:', e.message);
+      setDeleting(false);
+      setConfirmDelete(false);
+    }
+  };
+
+  const handleClose = () => {
+    setConfirmDelete(false);
+    setDeleting(false);
+    onClose();
+  };
 
   return (
     <AnimatePresence>
@@ -20,7 +47,7 @@ export const JournalLightbox: React.FC<JournalLightboxProps> = ({ entry, onClose
         <Dialog
           static
           open={!!entry}
-          onClose={onClose}
+          onClose={handleClose}
           className="relative z-[100]"
         >
           {/* Backdrop */}
@@ -47,12 +74,12 @@ export const JournalLightbox: React.FC<JournalLightboxProps> = ({ entry, onClose
               className="w-full max-w-[340px]"
             >
               <Dialog.Panel
-                className="relative w-full bg-[#FFFDF7] p-4 pb-0 shadow-[6px_12px_48px_rgba(0,0,0,0.5)] focus:outline-none"
+                className="relative w-full bg-[#FFFDF7] dark:bg-[#1E1A12] p-4 pb-0 shadow-[6px_12px_48px_rgba(0,0,0,0.5)] focus:outline-none"
               >
               {/* Close Button */}
               <button
                 type="button"
-                onClick={onClose}
+                onClick={handleClose}
                 aria-label="Close photo"
                 className="absolute top-[10px] right-3 w-7 h-7 bg-black/45 hover:bg-black/65 text-white rounded-full flex items-center justify-center transition-colors z-10 focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-white focus:outline-none"
               >
@@ -60,7 +87,7 @@ export const JournalLightbox: React.FC<JournalLightboxProps> = ({ entry, onClose
               </button>
 
               {/* Photo */}
-              <div className="w-full aspect-square overflow-hidden bg-[#E8E4DA]">
+              <div className="w-full aspect-square overflow-hidden bg-[#E8E4DA] dark:bg-[#2A261F]">
                 <img
                   src={entry.imageUrl}
                   alt={entry.imageAlt}
@@ -71,7 +98,7 @@ export const JournalLightbox: React.FC<JournalLightboxProps> = ({ entry, onClose
               {/* Bottom Section */}
               <div className="py-4 px-3 flex flex-col items-center">
                 <Dialog.Title
-                  className="font-['Caveat'] text-xl font-semibold leading-tight text-[#2C2416] text-center"
+                  className="font-['Caveat'] text-xl font-semibold leading-tight text-[#2C2416] dark:text-[#EDE5D0] text-center"
                 >
                   {entry.caption}
                 </Dialog.Title>
@@ -82,8 +109,8 @@ export const JournalLightbox: React.FC<JournalLightboxProps> = ({ entry, onClose
 
                 {/* Optional Story */}
                 {entry.story && (
-                  <div className="mt-3 pt-3 border-t border-[#EBE5D5] w-full">
-                    <p className="font-sans text-[13px] text-[#5C4E36] leading-relaxed italic text-center px-2">
+                  <div className="mt-3 pt-3 border-t border-[#EBE5D5] dark:border-[#3A352B] w-full">
+                    <p className="font-sans text-[13px] text-[#5C4E36] dark:text-[#C4B89A] leading-relaxed italic text-center px-2">
                       {entry.story}
                     </p>
                   </div>
@@ -94,12 +121,49 @@ export const JournalLightbox: React.FC<JournalLightboxProps> = ({ entry, onClose
                   {entry.tags.map((tag) => (
                     <span
                       key={tag}
-                      className="text-[10px] font-sans px-2.5 py-0.5 rounded-full bg-[#F0EBE0] text-[#6B5A3E] border border-[#D8CFBB]"
+                      className="text-[10px] font-sans px-2.5 py-0.5 rounded-full bg-[#F0EBE0] dark:bg-[#2A261F] text-[#6B5A3E] dark:text-[#C4B89A] border border-[#D8CFBB] dark:border-[#3A352B]"
                     >
                       {tag}
                     </span>
                   ))}
                 </div>
+
+                {/* Delete Action */}
+                {isAdmin && (
+                  <div className="mt-4 pt-3 border-t border-[#EBE5D5] dark:border-[#3A352B] w-full flex justify-center">
+                    {!confirmDelete ? (
+                      <button
+                        type="button"
+                        onClick={() => setConfirmDelete(true)}
+                        className="flex items-center gap-1.5 text-[11px] font-sans text-[#C4B89A] hover:text-red-500 transition-colors"
+                      >
+                        <Trash2 size={12} />
+                        remove
+                      </button>
+                    ) : (
+                      <div className="flex items-center gap-3">
+                        <span className="text-[11px] font-sans text-red-500">delete this memory?</span>
+                        <button
+                          type="button"
+                          onClick={handleDelete}
+                          disabled={deleting}
+                          className="text-[11px] font-sans font-medium text-red-600 hover:text-red-700 transition-colors disabled:opacity-50 flex items-center gap-1"
+                        >
+                          {deleting ? <Loader2 size={10} className="animate-spin" /> : null}
+                          {deleting ? 'deleting...' : 'yes'}
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => setConfirmDelete(false)}
+                          disabled={deleting}
+                          className="text-[11px] font-sans text-[#9C8A6E] hover:text-[#3A2E1E] dark:hover:text-[#EDE5D0] transition-colors disabled:opacity-50"
+                        >
+                          no
+                        </button>
+                      </div>
+                    )}
+                  </div>
+                )}
               </div>
 
               {/* Spacing padding at the very bottom */}
