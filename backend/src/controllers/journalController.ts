@@ -1,9 +1,8 @@
 import { Request, Response } from 'express';
-import path from 'path';
-import fs from 'fs';
 import { journalService } from '../services/journalService';
 import { asyncHandler, AppError } from '../middleware/errorHandler';
 import { CreateJournalEntryDTO } from '../types/journal';
+import cloudinary from '../config/cloudinary';
 
 const BASE_URL = process.env.BACKEND_URL ?? `http://localhost:${process.env.PORT ?? 4000}`;
 
@@ -40,7 +39,7 @@ export const journalController = {
       throw new AppError('rotation must be a number between -5 and 5', 400);
     }
 
-    const imageUrl = `${BASE_URL}/uploads/${req.file.filename}`;
+    const imageUrl = req.file.path; // This is now the Cloudinary secure URL
     const imageAlt = `${caption} — ${location}`;
 
     const dto: CreateJournalEntryDTO = {
@@ -75,11 +74,12 @@ export const journalController = {
     const entry = await journalService.getById(req.params.id);
     if (!entry) throw new AppError('Journal entry not found', 404);
 
-    // Delete image file from uploads
-    const filename = path.basename(entry.image_url);
-    const filePath = path.join(__dirname, '../../uploads', filename);
-    if (fs.existsSync(filePath)) {
-      fs.unlinkSync(filePath);
+    // Delete image from Cloudinary
+    if (entry.image_url.includes('cloudinary')) {
+      const publicId = entry.image_url.split('/').pop()?.split('.')[0];
+      if (publicId) {
+        await cloudinary.uploader.destroy(`journal/${publicId}`);
+      }
     }
 
     await journalService.delete(req.params.id);

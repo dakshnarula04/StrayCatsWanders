@@ -1,15 +1,12 @@
 import multer from 'multer';
 import sharp from 'sharp';
-import path from 'path';
-import fs from 'fs';
 import { Request, Response, NextFunction } from 'express';
 import { AppError } from './errorHandler';
+import cloudinary from '../config/cloudinary';
+import { UploadApiResponse } from 'cloudinary';
 
 const ALLOWED_TYPES = ['image/jpeg', 'image/png', 'image/webp', 'image/heic', 'image/heif'];
 const MAX_SIZE = Number(process.env.MAX_FILE_SIZE_MB ?? 5) * 1024 * 1024;
-const UPLOADS_DIR = path.join(__dirname, '../../uploads');
-
-if (!fs.existsSync(UPLOADS_DIR)) fs.mkdirSync(UPLOADS_DIR, { recursive: true });
 
 const storage = multer.memoryStorage();
 
@@ -33,24 +30,40 @@ export const processImage = async (
   if (!req.file) return next();
 
   try {
-    const filename = `journal-${Date.now()}-${Math.random().toString(36).substring(2, 8)}.webp`;
-    const outputPath = path.join(UPLOADS_DIR, filename);
-
-    await sharp(req.file.buffer)
-      .rotate()                      // auto-rotate based on EXIF orientation
+    const processedBuffer = await sharp(req.file.buffer)
+      .rotate()
       .resize(900, 900, {
         fit: 'cover',
         position: 'centre',
         withoutEnlargement: true,
       })
       .webp({ quality: 82 })
-      .toFile(outputPath);
+      .toBuffer();
 
-    req.file.filename = filename;
-    req.file.path = outputPath;
+    // Upload to Cloudinary
+    const uploadResult = await new Promise<UploadApiResponse>((resolve, reject) => {
+      const uploadStream = cloudinary.uploader.upload_stream(
+        {
+          folder: 'journal',
+          resource_type: 'image',
+          format: 'webp',
+        },
+        (error, result) => {
+          if (error) reject(error);
+          else if (result) resolve(result);
+          else reject(new Error('Cloudinary upload failed'));
+        }
+      );
+      uploadStream.end(processedBuffer);
+    });
+
+    // Store the secure URL and Public ID in the file object
+    req.file.path = uploadResult.secure_url;
+    req.file.filename = uploadResult.public_id;
 
     next();
   } catch (err) {
-    next(new AppError('Image processing failed', 500));
+    console.error('Upload Error:', err);
+    next(new AppError('Image processing or upload failed', 500));
   }
 };
