@@ -1,0 +1,12 @@
+@import "tailwindcss";
+
+@config "../../tailwind.config.ts";
+
+@layer base {
+  :root {
+    --transition-base: 300ms ease;
+  }
+  html {
+    scroll-behavior: smooth;
+  }
+}
