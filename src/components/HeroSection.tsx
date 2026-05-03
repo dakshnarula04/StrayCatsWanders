@@ -1,4 +1,4 @@
-import { motion, useReducedMotion } from 'framer-motion';
+import { motion, useReducedMotion, AnimatePresence } from 'framer-motion';
 import { ChevronDown } from 'lucide-react';
 import { Button } from './ui/Button';
 import { Link } from 'react-router-dom';
@@ -32,13 +32,20 @@ export const HeroSection: React.FC<HeroSectionProps> = ({
     <section className="relative min-h-[92vh] flex items-center justify-center overflow-hidden bg-forest-950">
       {/* Background Image Layer */}
       <div className="absolute inset-0" aria-hidden="true">
-        <img
-          src={imageUrl}
-          alt=""
-          className="object-cover w-full h-full opacity-60"
-          // @ts-ignore - fetchpriority is a new attribute
-          fetchpriority="high"
-        />
+        <AnimatePresence mode="wait">
+          <motion.img
+            key={imageUrl}
+            src={imageUrl}
+            alt=""
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 0.6 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 1 }}
+            className="object-cover w-full h-full"
+            // @ts-ignore - fetchpriority is a new attribute
+            fetchpriority="high"
+          />
+        </AnimatePresence>
       </div>
 
       {/* Overlay Layer */}

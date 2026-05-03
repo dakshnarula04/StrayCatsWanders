@@ -4,6 +4,9 @@ import { TravelCard } from '../components/TravelCard';
 import { SectionHeading } from '../components/ui/SectionHeading';
 import { siteConfig } from '../data/config';
 import { trips } from '../data/trips';
+import { useTheme } from '../hooks/useTheme';
+import heroLight from '../assets/hero_light.jpg';
+import heroDark from '../assets/hero_dark.jpg';
 
 /**
  * HomePage component featuring a hero section and a grid of recent travel stories.
@@ -13,8 +16,8 @@ export const HomePage: React.FC = () => {
     document.title = `${siteConfig.ownerName} · Nature & Travel Portfolio`;
   }, []);
 
-  // Using a high-quality placeholder for hero since the local asset doesn't exist yet
-  const heroImageUrl = "https://images.unsplash.com/photo-1464822759023-fed622ff2c3b?auto=format&fit=crop&q=80&w=2070";
+  const { dark } = useTheme();
+  const heroImageUrl = dark ? heroDark : heroLight;
 
   return (
     <div className="flex flex-col w-full">

@@ -8,7 +8,6 @@ export const siteConfig: SiteConfig = {
   profilePhoto: "/assets/profile.jpg",
   location: "Dehradun, Uttarakhand",
   socials: [
-    { label: "GitHub", href: "https://github.com", icon: "Github" },
     { label: "Instagram", href: "https://instagram.com", icon: "Instagram" },
     { label: "LinkedIn", href: "https://linkedin.com", icon: "Linkedin" }
   ]

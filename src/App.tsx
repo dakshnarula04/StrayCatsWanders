@@ -1,6 +1,6 @@
 import { BrowserRouter, Routes, Route } from 'react-router-dom';
 import { AuthProvider } from './context/AuthContext';
-import { useTheme } from './hooks/useTheme';
+import { ThemeProvider } from './context/ThemeContext';
 import { Layout } from './components/layout';
 import { HomePage } from './pages/HomePage';
 import { AboutPage } from './pages/AboutPage';
@@ -14,13 +14,11 @@ import ErrorBoundary from './components/ErrorBoundary';
  * Sets up routing and global theme management.
  */
 function App() {
-  // Initialize theme at the top level to ensure dark mode class is applied immediately
-  useTheme();
-
   return (
     <ErrorBoundary>
-      <AuthProvider>
-        <BrowserRouter>
+      <ThemeProvider>
+        <AuthProvider>
+          <BrowserRouter>
         <Routes>
           {/* Standalone admin route */}
           <Route path="/admin/login" element={<AdminLoginPage />} />
@@ -46,6 +44,7 @@ function App() {
         </Routes>
       </BrowserRouter>
       </AuthProvider>
+      </ThemeProvider>
     </ErrorBoundary>
   );
 }

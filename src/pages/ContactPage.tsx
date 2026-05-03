@@ -3,7 +3,7 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
 import { motion, AnimatePresence } from 'framer-motion';
-import { MapPin, Loader2, CheckCircle2, Code, Camera, Briefcase, type LucideIcon } from 'lucide-react';
+import { MapPin, Loader2, CheckCircle2, Camera, Briefcase, type LucideIcon } from 'lucide-react';
 import { siteConfig } from '../data/config';
 import { Button } from '../components/ui/Button';
 import { FormField } from '../components/ui/FormField';
@@ -11,7 +11,6 @@ import type { ContactFormData } from '../types';
 
 // Social Icon Map
 const IconMap: Record<string, LucideIcon> = {
-  Github: Code,
   Instagram: Camera,
   Linkedin: Briefcase,
 };
@@ -80,9 +79,9 @@ export const ContactPage: React.FC = () => {
           Say hello
         </h1>
         <p className="text-stone-600 dark:text-stone-300 mt-4 leading-relaxed text-base md:text-lg">
-          Based in the hills of Dehradun. Always happy to connect — whether it's about mountains, code, or a potential collaboration.
+          Based in the hills of Dehradun. Always happy to connect — whether it's about mountains or a potential collaboration.
         </p>
-        
+
         <div className="flex items-center gap-2 text-sm text-stone-500 dark:text-stone-400 mt-3 font-medium">
           <MapPin size={16} className="text-forest-500" />
           <span>Dehradun, Uttarakhand • Usually responds within 48 hours</span>
@@ -109,9 +108,9 @@ export const ContactPage: React.FC = () => {
         </div>
       </header>
 
-      <div 
-        className="my-12 border-t border-forest-200 dark:border-forest-800/50 w-full" 
-        aria-hidden="true" 
+      <div
+        className="mt-6 mb-12 border-t border-forest-200 dark:border-forest-800/50 w-full"
+        aria-hidden="true"
       />
 
       <AnimatePresence mode="wait">
