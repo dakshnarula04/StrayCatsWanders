@@ -47,6 +47,7 @@ export const processImage = async (
           folder: 'journal',
           resource_type: 'image',
           format: 'webp',
+          upload_preset: process.env.CLOUDINARY_UPLOAD_PRESET ?? 'journal_upload',
         },
         (error, result) => {
           if (error) reject(error);

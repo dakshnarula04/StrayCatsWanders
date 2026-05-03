@@ -5,8 +5,6 @@ import { SectionHeading } from '../components/ui/SectionHeading';
 import { siteConfig } from '../data/config';
 import { trips } from '../data/trips';
 import { useTheme } from '../hooks/useTheme';
-import heroLight from '../assets/hero_light.jpg';
-import heroDark from '../assets/hero_dark.jpg';
 
 /**
  * HomePage component featuring a hero section and a grid of recent travel stories.
@@ -17,7 +15,11 @@ export const HomePage: React.FC = () => {
   }, []);
 
   const { dark } = useTheme();
-  const heroImageUrl = dark ? heroDark : heroLight;
+  
+  const heroLightUrl = "https://res.cloudinary.com/df9fnyyzz/image/upload/q_auto/f_auto/v1777778442/hero_light_irbrrs.jpg";
+  const heroDarkUrl = "https://res.cloudinary.com/df9fnyyzz/image/upload/q_auto/f_auto/v1777778445/hero_dark_uclacp.jpg";
+  
+  const heroImageUrl = dark ? heroDarkUrl : heroLightUrl;
 
   return (
     <div className="flex flex-col w-full">
