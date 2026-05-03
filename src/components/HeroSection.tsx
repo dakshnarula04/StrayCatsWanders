@@ -32,7 +32,7 @@ export const HeroSection: React.FC<HeroSectionProps> = ({
     <section className="relative min-h-[92vh] flex items-center justify-center overflow-hidden bg-forest-950">
       {/* Background Image Layer */}
       <div className="absolute inset-0" aria-hidden="true">
-        <AnimatePresence mode="wait">
+        <AnimatePresence>
           <motion.img
             key={imageUrl}
             src={imageUrl}
@@ -40,8 +40,9 @@ export const HeroSection: React.FC<HeroSectionProps> = ({
             initial={{ opacity: 0 }}
             animate={{ opacity: 0.6 }}
             exit={{ opacity: 0 }}
-            transition={{ duration: 1 }}
+            transition={{ duration: 0.8 }}
             className="object-cover w-full h-full"
+            loading="eager"
             // @ts-ignore - fetchpriority is a new attribute
             fetchpriority="high"
           />

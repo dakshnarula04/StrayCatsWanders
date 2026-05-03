@@ -16,8 +16,8 @@ export const HomePage: React.FC = () => {
 
   const { dark } = useTheme();
   
-  const heroLightUrl = "https://res.cloudinary.com/df9fnyyzz/image/upload/q_auto/f_auto/v1777778442/hero_light_irbrrs.jpg";
-  const heroDarkUrl = "https://res.cloudinary.com/df9fnyyzz/image/upload/q_auto/f_auto/v1777778445/hero_dark_uclacp.jpg";
+  const heroLightUrl = "https://res.cloudinary.com/df9fnyyzz/image/upload/q_auto,f_auto,w_1920,c_limit/v1777778442/hero_light_irbrrs.jpg";
+  const heroDarkUrl = "https://res.cloudinary.com/df9fnyyzz/image/upload/q_auto,f_auto,w_1920,c_limit/v1777778445/hero_dark_uclacp.jpg";
   
   const heroImageUrl = dark ? heroDarkUrl : heroLightUrl;
 
