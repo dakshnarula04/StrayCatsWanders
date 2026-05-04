@@ -44,14 +44,15 @@ export const tripApi = {
     return toTripData(data);
   },
 
-  async update(id: string | number, body: Partial<TripData>, token: string): Promise<TripData> {
+  async update(id: string | number, body: Partial<TripData> | FormData, token: string): Promise<TripData> {
+    const isFormData = body instanceof FormData;
     const res = await fetch(`${BASE}/api/trips/${id}`, {
       method: 'PATCH',
       headers: {
-        'Content-Type': 'application/json',
+        ...(isFormData ? {} : { 'Content-Type': 'application/json' }),
         'Authorization': `Bearer ${token}`
       },
-      body: JSON.stringify(body),
+      body: isFormData ? body : JSON.stringify(body),
       credentials: 'include',
     });
     const data = await handleResponse<any>(res);

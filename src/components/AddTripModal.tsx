@@ -1,7 +1,7 @@
 import React, { useState, useRef } from 'react';
-import { Dialog } from '@headlessui/react';
+import { Dialog, DialogPanel, DialogTitle } from '@headlessui/react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Camera, X, Loader2 } from 'lucide-react';
+import { Camera, X, Plus, Loader2 } from 'lucide-react';
 import { tripApi } from '../services/tripApi';
 import { useAuth } from '../context/AuthContext';
 import type { TripData } from '../types';
@@ -26,6 +26,8 @@ export const AddTripModal: React.FC<AddTripModalProps> = ({ isOpen, onClose, onS
   const [date, setDate] = useState('');
   const [excerpt, setExcerpt] = useState('');
   const [selectedTags, setSelectedTags] = useState<string[]>([]);
+  const [localCustomTags, setLocalCustomTags] = useState<string[]>([]);
+  const [newTagInput, setNewTagInput] = useState('');
   const [featured, setFeatured] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [fieldError, setFieldError] = useState<string | null>(null);
@@ -41,6 +43,10 @@ export const AddTripModal: React.FC<AddTripModalProps> = ({ isOpen, onClose, onS
       setSelectedTags(trip.tags);
       setFeatured(trip.featured);
       setPreview(trip.imageUrl);
+
+      // Identify custom tags
+      const custom = trip.tags.filter(t => !AVAILABLE_TAGS.includes(t));
+      setLocalCustomTags(prev => Array.from(new Set([...prev, ...custom])));
     } else {
       resetForm();
     }
@@ -60,6 +66,22 @@ export const AddTripModal: React.FC<AddTripModalProps> = ({ isOpen, onClose, onS
     );
   };
 
+  const handleAddCustomTag = (e?: React.FormEvent) => {
+    if (e) e.preventDefault();
+    const tag = newTagInput.trim().toLowerCase();
+    if (!tag) return;
+    
+    if (!AVAILABLE_TAGS.includes(tag) && !localCustomTags.includes(tag)) {
+      setLocalCustomTags(prev => [...prev, tag]);
+    }
+    
+    if (!selectedTags.includes(tag)) {
+      setSelectedTags(prev => [...prev, tag]);
+    }
+    
+    setNewTagInput('');
+  };
+
   const resetForm = () => {
     setPreview(null);
     setImageFile(null);
@@ -68,6 +90,8 @@ export const AddTripModal: React.FC<AddTripModalProps> = ({ isOpen, onClose, onS
     setDate('');
     setExcerpt('');
     setSelectedTags([]);
+    setLocalCustomTags([]);
+    setNewTagInput('');
     setFeatured(false);
     setFieldError(null);
   };
@@ -89,18 +113,32 @@ export const AddTripModal: React.FC<AddTripModalProps> = ({ isOpen, onClose, onS
 
     try {
       if (trip) {
-        // Handle Update (Note: simple PATCH for fields, if image changed would need multipart)
-        const updateData: Partial<TripData> = {
-          title: title.trim(),
-          location: location.trim(),
-          date: date.trim(),
-          excerpt: excerpt.trim(),
-          tags: selectedTags,
-          featured
-        };
-        
-        const updatedTrip = await tripApi.update(trip.id, updateData, accessToken);
-        onSuccess(updatedTrip);
+        // Handle Update
+        let result;
+        if (imageFile) {
+          // If new image, must use FormData
+          const fd = new FormData();
+          fd.append('image', imageFile);
+          fd.append('title', title.trim());
+          fd.append('location', location.trim());
+          fd.append('date', date.trim());
+          fd.append('excerpt', excerpt.trim());
+          fd.append('tags', JSON.stringify(selectedTags));
+          fd.append('featured', String(featured));
+          result = await tripApi.update(trip.id, fd, accessToken);
+        } else {
+          // Pure text update
+          const updateData: Partial<TripData> = {
+            title: title.trim(),
+            location: location.trim(),
+            date: date.trim(),
+            excerpt: excerpt.trim(),
+            tags: selectedTags,
+            featured
+          };
+          result = await tripApi.update(trip.id, updateData, accessToken);
+        }
+        onSuccess(result);
       } else {
         // Handle Create
         if (!imageFile) {
@@ -142,7 +180,7 @@ export const AddTripModal: React.FC<AddTripModalProps> = ({ isOpen, onClose, onS
           <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="fixed inset-0 bg-black/60 backdrop-blur-sm" />
 
           <div className="fixed inset-0 flex items-center justify-center p-4 overflow-y-auto">
-            <Dialog.Panel
+            <DialogPanel
               as={motion.div}
               initial={{ scale: 0.95, opacity: 0 }}
               animate={{ scale: 1, opacity: 1 }}
@@ -151,9 +189,9 @@ export const AddTripModal: React.FC<AddTripModalProps> = ({ isOpen, onClose, onS
             >
               <div className="p-6">
                 <div className="flex justify-between items-center mb-6">
-                  <Dialog.Title className="font-serif text-2xl text-forest-900 dark:text-linen-50">
+                  <DialogTitle className="font-serif text-2xl text-forest-900 dark:text-linen-50">
                     {trip ? 'edit journey' : 'add a journey'}
-                  </Dialog.Title>
+                  </DialogTitle>
                   <button onClick={handleClose} disabled={submitting} className="text-forest-400 hover:text-forest-900 transition-colors">
                     <X size={20} />
                   </button>
@@ -172,9 +210,19 @@ export const AddTripModal: React.FC<AddTripModalProps> = ({ isOpen, onClose, onS
                     </label>
                     <div
                       onClick={() => !submitting && fileInputRef.current?.click()}
-                      className={`h-48 w-full rounded border-2 border-dashed flex flex-col items-center justify-center cursor-pointer overflow-hidden transition-all ${preview ? 'border-none' : 'border-forest-200 bg-forest-50/30'}`}
+                      className={`h-48 w-full rounded border-2 border-dashed flex flex-col items-center justify-center cursor-pointer overflow-hidden transition-all group relative ${preview ? 'border-none' : 'border-forest-200 bg-forest-50/30'}`}
                     >
-                      {preview ? <img src={preview} alt="Preview" className="w-full h-full object-cover" /> : <Camera size={32} className="text-forest-300" />}
+                      {preview ? (
+                        <>
+                          <img src={preview} alt="Preview" className="w-full h-full object-cover" />
+                          <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                            <Camera size={24} className="text-white" />
+                            <span className="ml-2 text-xs text-white font-sans font-bold">change photo</span>
+                          </div>
+                        </>
+                      ) : (
+                        <Camera size={32} className="text-forest-300" />
+                      )}
                     </div>
                     <input type="file" ref={fileInputRef} onChange={(e) => { const f = e.target.files?.[0]; if (f) handleFileSelect(f); }} accept="image/*" className="hidden" />
                   </div>
@@ -203,11 +251,35 @@ export const AddTripModal: React.FC<AddTripModalProps> = ({ isOpen, onClose, onS
                   <div>
                     <label className="block text-[10px] uppercase tracking-widest text-forest-500 mb-2 font-sans font-bold">tags</label>
                     <div className="flex flex-wrap gap-2">
-                      {AVAILABLE_TAGS.map(tag => (
+                      {[...AVAILABLE_TAGS, ...localCustomTags].map(tag => (
                         <button key={tag} type="button" onClick={() => toggleTag(tag)} className={`px-3 py-1 rounded-full text-[10px] font-sans transition-all ${selectedTags.includes(tag) ? 'bg-forest-900 text-white' : 'bg-forest-100 text-forest-600 hover:bg-forest-200'}`}>
                           {tag}
                         </button>
                       ))}
+                      
+                      {/* Add Custom Tag Input */}
+                      <div className="flex items-center ml-1">
+                        <input
+                          type="text"
+                          value={newTagInput}
+                          onChange={(e) => setNewTagInput(e.target.value)}
+                          onKeyDown={(e) => {
+                            if (e.key === 'Enter') {
+                              e.preventDefault();
+                              handleAddCustomTag();
+                            }
+                          }}
+                          placeholder="new tag..."
+                          className="w-20 bg-transparent border-b border-forest-200 py-0.5 font-sans text-[10px] text-forest-900 dark:text-linen-100 placeholder:text-forest-300 focus:outline-none focus:border-forest-900 transition-colors"
+                        />
+                        <button
+                          type="button"
+                          onClick={() => handleAddCustomTag()}
+                          className="ml-1 p-1 text-forest-400 hover:text-forest-900 transition-colors"
+                        >
+                          <Plus size={12} />
+                        </button>
+                      </div>
                     </div>
                   </div>
 
@@ -224,7 +296,7 @@ export const AddTripModal: React.FC<AddTripModalProps> = ({ isOpen, onClose, onS
                   </div>
                 </form>
               </div>
-            </Dialog.Panel>
+            </DialogPanel>
           </div>
         </Dialog>
       )}

@@ -66,20 +66,21 @@ export const journalApi = {
     return toJournalEntry(row);
   },
 
-  async update(id: string, body: {
+  async update(id: string, body: FormData | {
     caption?: string;
     location?: string;
     date_label?: string;
     story?: string;
     tags?: string[];
   }, token: string): Promise<JournalEntry> {
+    const isFormData = body instanceof FormData;
     const res = await fetch(`${BASE}/api/journal/${id}`, {
       method: 'PATCH',
       headers: { 
-        'Content-Type': 'application/json',
+        ...(isFormData ? {} : { 'Content-Type': 'application/json' }),
         'Authorization': `Bearer ${token}`
       },
-      body: JSON.stringify(body),
+      body: isFormData ? body : JSON.stringify(body),
       credentials: 'include',
     });
     const row = await handleResponse<any>(res);

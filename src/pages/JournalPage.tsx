@@ -25,6 +25,7 @@ const JournalPage: React.FC = () => {
   const [activeTag, setActiveTag] = useState<string>('all');
   const [selectedEntry, setSelectedEntry] = useState<JournalEntry | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [editingEntry, setEditingEntry] = useState<JournalEntry | null>(null);
   const [toast, setToast] = useState<string | null>(null);
 
   useEffect(() => {
@@ -231,7 +232,10 @@ const JournalPage: React.FC = () => {
           className="fixed top-24 right-0 z-40 bg-[#3A2E1E] dark:bg-[#C4B89A] rounded-l-lg flex flex-col shadow-[-2px_4px_16px_rgba(0,0,0,0.3)] overflow-hidden"
         >
           <button
-            onClick={() => setIsModalOpen(true)}
+            onClick={() => {
+              setEditingEntry(null);
+              setIsModalOpen(true);
+            }}
             title="add memory"
             className="p-[10px_12px] text-[#F5F0E8] dark:text-[#2A2318] hover:bg-white/10 dark:hover:bg-black/10 transition-colors focus:outline-none"
           >
@@ -275,16 +279,31 @@ const JournalPage: React.FC = () => {
           setSelectedEntry(null);
           showToast('memory removed');
         }}
+        onEdit={(entry) => {
+          setSelectedEntry(null);
+          setEditingEntry(entry);
+          setIsModalOpen(true);
+        }}
       />
 
       <AddMemoryModal 
         isOpen={isModalOpen} 
-        onClose={() => setIsModalOpen(false)} 
-        onSuccess={(entry) => {
-          setEntries(prev => [entry, ...prev]);
-          setTotal(prev => prev + 1);
+        entry={editingEntry}
+        onClose={() => {
           setIsModalOpen(false);
-          showToast('memory pinned!');
+          setEditingEntry(null);
+        }} 
+        onSuccess={(entry) => {
+          if (editingEntry) {
+            setEntries(prev => prev.map(e => e.id === entry.id ? entry : e));
+            showToast('memory updated');
+          } else {
+            setEntries(prev => [entry, ...prev]);
+            setTotal(prev => prev + 1);
+            showToast('memory pinned!');
+          }
+          setIsModalOpen(false);
+          setEditingEntry(null);
           // Refresh tags list in case a new tag was used
           journalApi.getTags().then(setAvailableTags).catch(() => {});
         }}

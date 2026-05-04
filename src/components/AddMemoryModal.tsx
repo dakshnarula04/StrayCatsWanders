@@ -1,7 +1,7 @@
 import React, { useState, useRef } from 'react';
-import { Dialog } from '@headlessui/react';
+import { Dialog, DialogPanel, DialogTitle } from '@headlessui/react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Camera, X, Loader2 } from 'lucide-react';
+import { Camera, X, Plus, Loader2 } from 'lucide-react';
 import { journalApi } from '../services/journalApi';
 import { useAuth } from '../context/AuthContext';
 import type { JournalEntry } from '../types';
@@ -10,11 +10,12 @@ interface AddMemoryModalProps {
   isOpen: boolean;
   onClose: () => void;
   onSuccess: (entry: JournalEntry) => void;
+  entry?: JournalEntry | null; // Added for editing
 }
 
 const AVAILABLE_TAGS = ['mountains', 'forest', 'water', 'golden hour', 'snow', 'solo', 'straylife', 'slowtravel', 'rainvibes', 'silentmoments', 'rawmoments', 'dawn'];
 
-export const AddMemoryModal: React.FC<AddMemoryModalProps> = ({ isOpen, onClose, onSuccess }) => {
+export const AddMemoryModal: React.FC<AddMemoryModalProps> = ({ isOpen, onClose, onSuccess, entry }) => {
   const { accessToken } = useAuth();
   const [preview, setPreview] = useState<string | null>(null);
   const [imageFile, setImageFile] = useState<File | null>(null);
@@ -25,10 +26,30 @@ export const AddMemoryModal: React.FC<AddMemoryModalProps> = ({ isOpen, onClose,
   );
   const [story, setStory] = useState('');
   const [selectedTags, setSelectedTags] = useState<string[]>([]);
+  const [localCustomTags, setLocalCustomTags] = useState<string[]>([]);
+  const [newTagInput, setNewTagInput] = useState('');
   const [isDragging, setIsDragging] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [fieldError, setFieldError] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  // Sync state with entry prop when it changes
+  React.useEffect(() => {
+    if (entry) {
+      setPreview(entry.imageUrl);
+      setCaption(entry.caption);
+      setLocation(entry.location);
+      setDateLabel(entry.date);
+      setStory(entry.story || '');
+      setSelectedTags(entry.tags);
+      
+      // Find tags that aren't in AVAILABLE_TAGS and add them to localCustomTags
+      const custom = entry.tags.filter(t => !AVAILABLE_TAGS.includes(t));
+      setLocalCustomTags(prev => Array.from(new Set([...prev, ...custom])));
+    } else {
+      resetForm();
+    }
+  }, [entry]);
 
   const handleFileSelect = (file: File) => {
     setImageFile(file);
@@ -49,6 +70,22 @@ export const AddMemoryModal: React.FC<AddMemoryModalProps> = ({ isOpen, onClose,
     );
   };
 
+  const handleAddCustomTag = (e?: React.FormEvent) => {
+    if (e) e.preventDefault();
+    const tag = newTagInput.trim().toLowerCase();
+    if (!tag) return;
+    
+    if (!AVAILABLE_TAGS.includes(tag) && !localCustomTags.includes(tag)) {
+      setLocalCustomTags(prev => [...prev, tag]);
+    }
+    
+    if (!selectedTags.includes(tag)) {
+      setSelectedTags(prev => [...prev, tag]);
+    }
+    
+    setNewTagInput('');
+  };
+
   const resetForm = () => {
     setPreview(null);
     setImageFile(null);
@@ -57,13 +94,15 @@ export const AddMemoryModal: React.FC<AddMemoryModalProps> = ({ isOpen, onClose,
     setDateLabel(new Date().toLocaleDateString('en-US', { month: 'short', year: 'numeric' }));
     setStory('');
     setSelectedTags([]);
+    setLocalCustomTags([]);
+    setNewTagInput('');
     setFieldError(null);
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    if (!imageFile) {
+    if (!entry && !imageFile) {
       setFieldError('Select a photo first');
       return;
     }
@@ -84,20 +123,48 @@ export const AddMemoryModal: React.FC<AddMemoryModalProps> = ({ isOpen, onClose,
     setFieldError(null);
 
     try {
-      const fd = new FormData();
-      fd.append('image',      imageFile);
-      fd.append('caption',    caption.trim());
-      fd.append('location',   location.trim());
-      fd.append('date_label', dateLabel.trim());
-      fd.append('story',      story.trim());
-      fd.append('tags',       JSON.stringify(selectedTags));
-      fd.append('rotation',   String((Math.random() * 8 - 4).toFixed(2)));
+      if (entry) {
+        // Handle Update
+        let result;
+        if (imageFile) {
+          // If new image, must use FormData
+          const fd = new FormData();
+          fd.append('image',      imageFile);
+          fd.append('caption',    caption.trim());
+          fd.append('location',   location.trim());
+          fd.append('date_label', dateLabel.trim());
+          fd.append('story',      story.trim());
+          fd.append('tags',       JSON.stringify(selectedTags));
+          result = await journalApi.update(entry.id, fd, accessToken);
+        } else {
+          // Pure text update
+          const updateData = {
+            caption:   caption.trim(),
+            location:  location.trim(),
+            date_label: dateLabel.trim(),
+            story:      story.trim(),
+            tags:       selectedTags,
+          };
+          result = await journalApi.update(entry.id, updateData, accessToken);
+        }
+        onSuccess(result);
+      } else {
+        // Handle Create
+        const fd = new FormData();
+        if (imageFile) fd.append('image', imageFile);
+        fd.append('caption',    caption.trim());
+        fd.append('location',   location.trim());
+        fd.append('date_label', dateLabel.trim());
+        fd.append('story',      story.trim());
+        fd.append('tags',       JSON.stringify(selectedTags));
+        fd.append('rotation',   String((Math.random() * 8 - 4).toFixed(2)));
 
-      const newEntry = await journalApi.create(fd, accessToken);
+        const newEntry = await journalApi.create(fd, accessToken);
+        onSuccess(newEntry);
+      }
       resetForm();
-      onSuccess(newEntry);
     } catch (e: any) {
-      setFieldError(e.message ?? 'Upload failed — try again');
+      setFieldError(e.message ?? 'Operation failed — try again');
     } finally {
       setSubmitting(false);
     }
@@ -117,7 +184,7 @@ export const AddMemoryModal: React.FC<AddMemoryModalProps> = ({ isOpen, onClose,
           static
           open={isOpen}
           onClose={handleClose}
-          className="relative z-[100]"
+          className="relative z-[110]"
         >
           {/* Backdrop */}
           <motion.div
@@ -128,7 +195,7 @@ export const AddMemoryModal: React.FC<AddMemoryModalProps> = ({ isOpen, onClose,
           />
 
           <div className="fixed inset-0 flex items-center justify-center p-4 overflow-y-auto">
-            <Dialog.Panel
+            <DialogPanel
               as={motion.div}
               initial={{ scale: 0.95, opacity: 0 }}
               animate={{ scale: 1, opacity: 1 }}
@@ -137,9 +204,9 @@ export const AddMemoryModal: React.FC<AddMemoryModalProps> = ({ isOpen, onClose,
             >
               <div className="p-5">
                 <div className="flex justify-between items-center mb-4">
-                  <Dialog.Title className="font-['Caveat'] text-2xl text-[#3A2E1E] dark:text-[#EDE5D0]">
-                    add a memory
-                  </Dialog.Title>
+                  <DialogTitle className="font-['Caveat'] text-2xl text-[#3A2E1E] dark:text-[#EDE5D0]">
+                    {entry ? 'edit memory' : 'add a memory'}
+                  </DialogTitle>
                   <button onClick={handleClose} disabled={submitting} className="text-[#9C8A6E] hover:text-[#3A2E1E] dark:hover:text-[#EDE5D0] transition-colors disabled:opacity-50">
                     <X size={20} />
                   </button>
@@ -160,10 +227,11 @@ export const AddMemoryModal: React.FC<AddMemoryModalProps> = ({ isOpen, onClose,
                     </label>
                     <div 
                       onClick={() => !submitting && fileInputRef.current?.click()}
-                      onDragOver={(e) => { e.preventDefault(); setIsDragging(true); }}
+                      onDragOver={(e) => { e.preventDefault(); if (!submitting) setIsDragging(true); }}
                       onDragLeave={() => setIsDragging(false)}
                       onDrop={(e) => {
                         e.preventDefault();
+                        if (submitting) return;
                         setIsDragging(false);
                         const file = e.dataTransfer.files[0];
                         if (file) handleFileSelect(file);
@@ -173,14 +241,23 @@ export const AddMemoryModal: React.FC<AddMemoryModalProps> = ({ isOpen, onClose,
                         ${isDragging ? 'border-[#9C8A6E] bg-[#F0EBE0]' : 'border-[#C4B89A] bg-[#F5F0E8] dark:bg-[#2A261F]'}
                         ${preview ? 'border-none' : ''}
                         ${submitting ? 'pointer-events-none opacity-60' : ''}
+                        group relative
                       `}
                     >
                       {preview ? (
-                        <img src={preview} alt="Preview" className="w-full h-full object-cover" />
+                        <>
+                          <img src={preview} alt="Preview" className="w-full h-full object-cover" />
+                          <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                             <Camera size={24} className="text-white" />
+                             <span className="ml-2 text-xs text-white font-sans">change photo</span>
+                          </div>
+                        </>
                       ) : (
                         <>
                           <Camera size={32} className="text-[#C4B89A] mb-2" />
-                          <span className="text-xs text-[#9C8A6E] font-sans">drop a photo</span>
+                          <span className="text-xs text-[#9C8A6E] font-sans">
+                            drop a photo
+                          </span>
                         </>
                       )}
                     </div>
@@ -262,7 +339,7 @@ export const AddMemoryModal: React.FC<AddMemoryModalProps> = ({ isOpen, onClose,
                       tags
                     </label>
                     <div className="flex flex-wrap gap-2">
-                      {AVAILABLE_TAGS.map(tag => (
+                      {[...AVAILABLE_TAGS, ...localCustomTags].map(tag => (
                         <button
                           key={tag}
                           type="button"
@@ -279,6 +356,30 @@ export const AddMemoryModal: React.FC<AddMemoryModalProps> = ({ isOpen, onClose,
                           {tag}
                         </button>
                       ))}
+                      
+                      {/* Add Custom Tag Input */}
+                      <div className="flex items-center ml-1">
+                        <input
+                          type="text"
+                          value={newTagInput}
+                          onChange={(e) => setNewTagInput(e.target.value)}
+                          onKeyDown={(e) => {
+                            if (e.key === 'Enter') {
+                              e.preventDefault();
+                              handleAddCustomTag();
+                            }
+                          }}
+                          placeholder="new tag..."
+                          className="w-20 bg-transparent border-b border-[#C4B89A] py-0.5 font-sans text-[10px] text-[#2C2416] dark:text-[#EDE5D0] placeholder:text-[#C4B89A]/60 focus:outline-none focus:border-[#3A2E1E] transition-colors"
+                        />
+                        <button
+                          type="button"
+                          onClick={() => handleAddCustomTag()}
+                          className="ml-1 p-1 text-[#9C8A6E] hover:text-[#3A2E1E] dark:hover:text-[#EDE5D0] transition-colors"
+                        >
+                          <Plus size={12} />
+                        </button>
+                      </div>
                     </div>
                   </div>
 
@@ -303,13 +404,13 @@ export const AddMemoryModal: React.FC<AddMemoryModalProps> = ({ isOpen, onClose,
                           pinning...
                         </>
                       ) : (
-                        'pin it'
+                        entry ? 'update it' : 'pin it'
                       )}
                     </button>
                   </div>
                 </form>
               </div>
-            </Dialog.Panel>
+            </DialogPanel>
           </div>
         </Dialog>
       )}

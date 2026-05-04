@@ -4,6 +4,7 @@ import { HeroSection } from '../components/HeroSection';
 import { TravelCard } from '../components/TravelCard';
 import { SectionHeading } from '../components/ui/SectionHeading';
 import { AddTripModal } from '../components/AddTripModal';
+import { TripDetailModal } from '../components/TripDetailModal';
 import { siteConfig } from '../data/config';
 import { tripApi } from '../services/tripApi';
 import { useTheme } from '../hooks/useTheme';
@@ -22,6 +23,7 @@ export const HomePage: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingTrip, setEditingTrip] = useState<TripData | null>(null);
+  const [selectedTrip, setSelectedTrip] = useState<TripData | null>(null);
 
   useEffect(() => {
     document.title = `${siteConfig.ownerName} · Nature & Travel Portfolio`;
@@ -44,11 +46,16 @@ export const HomePage: React.FC = () => {
     setIsModalOpen(true);
   };
 
+  const handleCardClick = (trip: TripData) => {
+    setSelectedTrip(trip);
+  };
+
   const handleDelete = async (id: string | number) => {
     if (!accessToken || !window.confirm('Are you sure you want to remove this journey?')) return;
     try {
       await tripApi.delete(id, accessToken);
       setJourneys(prev => prev.filter(j => j.id !== id));
+      if (selectedTrip?.id === id) setSelectedTrip(null);
     } catch (err) {
       alert('Failed to remove journey');
     }
@@ -57,6 +64,7 @@ export const HomePage: React.FC = () => {
   const handleModalSuccess = (trip: TripData) => {
     if (editingTrip) {
       setJourneys(prev => prev.map(j => j.id === trip.id ? trip : j));
+      if (selectedTrip?.id === trip.id) setSelectedTrip(trip);
     } else {
       setJourneys(prev => [trip, ...prev]);
     }
@@ -117,6 +125,7 @@ export const HomePage: React.FC = () => {
                 index={index} 
                 onDelete={isAdmin ? () => handleDelete(trip.id) : undefined}
                 onEdit={isAdmin ? () => handleEdit(trip) : undefined}
+                onClick={() => handleCardClick(trip)}
               />
             ))}
           </div>
@@ -128,6 +137,12 @@ export const HomePage: React.FC = () => {
         onClose={() => setIsModalOpen(false)}
         onSuccess={handleModalSuccess}
         trip={editingTrip}
+      />
+
+      <TripDetailModal 
+        isOpen={!!selectedTrip}
+        onClose={() => setSelectedTrip(null)}
+        trip={selectedTrip}
       />
     </div>
   );

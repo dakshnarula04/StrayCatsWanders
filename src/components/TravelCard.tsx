@@ -11,12 +11,13 @@ interface TravelCardProps {
   index: number;
   onDelete?: () => void;
   onEdit?: () => void;
+  onClick?: () => void;
 }
 
 /**
  * Individual travel card with image, tags, and trip details.
  */
-export const TravelCard: React.FC<TravelCardProps> = ({ trip, index, onDelete, onEdit }) => {
+export const TravelCard: React.FC<TravelCardProps> = ({ trip, index, onDelete, onEdit, onClick }) => {
   const { ref, isVisible } = useScrollReveal(0.15);
   const shouldReduceMotion = useReducedMotion();
 
@@ -29,8 +30,9 @@ export const TravelCard: React.FC<TravelCardProps> = ({ trip, index, onDelete, o
         opacity: isVisible ? 1 : (shouldReduceMotion ? 1 : 0)
       }}
       className={cn(
-        "group rounded-2xl bg-white dark:bg-forest-900 shadow-sm border border-forest-200/60 dark:border-forest-700/40 transition-all duration-500 ease-out hover:-translate-y-1 hover:shadow-md relative"
+        "group rounded-2xl bg-white dark:bg-forest-900 shadow-sm border border-forest-200/60 dark:border-forest-700/40 transition-all duration-500 ease-out hover:-translate-y-1 hover:shadow-md relative cursor-pointer"
       )}
+      onClick={onClick}
     >
       {/* Featured Badge (Overlapping) */}
       {trip.featured && (

@@ -32,12 +32,11 @@ export const processImage = async (
   try {
     const processedBuffer = await sharp(req.file.buffer)
       .rotate()
-      .resize(900, 900, {
-        fit: 'cover',
-        position: 'centre',
+      .resize(1600, 1600, {
+        fit: 'inside',
         withoutEnlargement: true,
       })
-      .webp({ quality: 82 })
+      .webp({ quality: 85 })
       .toBuffer();
 
     // Upload to Cloudinary

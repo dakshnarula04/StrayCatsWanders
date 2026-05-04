@@ -1,7 +1,7 @@
 import { useState } from 'react';
-import { Dialog } from '@headlessui/react';
+import { Dialog, DialogPanel, DialogTitle } from '@headlessui/react';
 import { motion, AnimatePresence, useReducedMotion } from 'framer-motion';
-import { X, Trash2, Loader2 } from 'lucide-react';
+import { X, Trash2, Edit, Loader2 } from 'lucide-react';
 import { journalApi } from '../services/journalApi';
 import { useAuth } from '../context/AuthContext';
 import type { JournalEntry } from '../types';
@@ -10,13 +10,14 @@ interface JournalLightboxProps {
   entry: JournalEntry | null;
   onClose: () => void;
   onDelete: (id: string) => void;
+  onEdit: (entry: JournalEntry) => void; // Added for editing
 }
 
 /**
  * An accessible modal lightbox for viewing a single journal entry in detail.
  * Includes a delete action with confirmation.
  */
-export const JournalLightbox: React.FC<JournalLightboxProps> = ({ entry, onClose, onDelete }) => {
+export const JournalLightbox: React.FC<JournalLightboxProps> = ({ entry, onClose, onDelete, onEdit }) => {
   const shouldReduceMotion = useReducedMotion();
   const { isAdmin, accessToken } = useAuth();
   const [deleting, setDeleting] = useState(false);
@@ -73,7 +74,7 @@ export const JournalLightbox: React.FC<JournalLightboxProps> = ({ entry, onClose
               }}
               className="w-full max-w-[340px]"
             >
-              <Dialog.Panel
+              <DialogPanel
                 className="relative w-full bg-[#FFFDF7] dark:bg-[#1E1A12] p-4 pb-0 shadow-[6px_12px_48px_rgba(0,0,0,0.5)] focus:outline-none"
               >
               {/* Close Button */}
@@ -97,11 +98,11 @@ export const JournalLightbox: React.FC<JournalLightboxProps> = ({ entry, onClose
 
               {/* Bottom Section */}
               <div className="py-4 px-3 flex flex-col items-center">
-                <Dialog.Title
+                <DialogTitle
                   className="font-['Caveat'] text-xl font-semibold leading-tight text-[#2C2416] dark:text-[#EDE5D0] text-center"
                 >
                   {entry.caption}
-                </Dialog.Title>
+                </DialogTitle>
 
                 <p className="text-[12px] text-[#9C8A6E] font-sans mt-1 text-center">
                   {entry.location} · {entry.date}
@@ -130,16 +131,26 @@ export const JournalLightbox: React.FC<JournalLightboxProps> = ({ entry, onClose
 
                 {/* Delete Action */}
                 {isAdmin && (
-                  <div className="mt-4 pt-3 border-t border-[#EBE5D5] dark:border-[#3A352B] w-full flex justify-center">
+                  <div className="mt-4 pt-3 border-t border-[#EBE5D5] dark:border-[#3A352B] w-full flex justify-center gap-6">
                     {!confirmDelete ? (
-                      <button
-                        type="button"
-                        onClick={() => setConfirmDelete(true)}
-                        className="flex items-center gap-1.5 text-[11px] font-sans text-[#C4B89A] hover:text-red-500 transition-colors"
-                      >
-                        <Trash2 size={12} />
-                        remove
-                      </button>
+                      <>
+                        <button
+                          type="button"
+                          onClick={() => entry && onEdit(entry)}
+                          className="flex items-center gap-1.5 text-[11px] font-sans text-[#C4B89A] hover:text-[#3A2E1E] dark:hover:text-[#EDE5D0] transition-colors"
+                        >
+                          <Edit size={12} />
+                          edit
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => setConfirmDelete(true)}
+                          className="flex items-center gap-1.5 text-[11px] font-sans text-[#C4B89A] hover:text-red-500 transition-colors"
+                        >
+                          <Trash2 size={12} />
+                          remove
+                        </button>
+                      </>
                     ) : (
                       <div className="flex items-center gap-3">
                         <span className="text-[11px] font-sans text-red-500">delete this memory?</span>
@@ -168,7 +179,7 @@ export const JournalLightbox: React.FC<JournalLightboxProps> = ({ entry, onClose
 
               {/* Spacing padding at the very bottom */}
               <div className="h-4" aria-hidden="true" />
-            </Dialog.Panel>
+            </DialogPanel>
             </motion.div>
           </div>
         </Dialog>
