@@ -7,6 +7,7 @@ import dotenv from 'dotenv';
 dotenv.config();
 
 import journalRoutes from './routes/journal';
+import tripRoutes from './routes/trip';
 import authRoutes from './routes/auth';
 import { errorHandler } from './middleware/errorHandler';
 import { query } from './config/db';
@@ -45,6 +46,13 @@ app.use('/api/journal', rateLimit({
   message: { success: false, error: 'Upload limit reached. Try again in a minute.' },
 }));
 
+app.use('/api/trips', rateLimit({
+  windowMs: 60 * 1000,
+  max: 10,
+  skip: (req) => req.method !== 'POST',
+  message: { success: false, error: 'Upload limit reached. Try again in a minute.' },
+}));
+
 app.use(express.json({ limit: '1mb' }));
 app.use(express.urlencoded({ extended: true, limit: '1mb' }));
 app.use(cookieParser());
@@ -74,6 +82,7 @@ app.get('/health', async (req, res) => {
 // API routes
 app.use('/api/auth', authRoutes);
 app.use('/api/journal', journalRoutes);
+app.use('/api/trips', tripRoutes);
 
 // 404 handler
 app.use((req, res) => {

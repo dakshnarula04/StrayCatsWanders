@@ -3,6 +3,7 @@ import { Heart, ArrowUp, Camera, Briefcase, type LucideIcon } from 'lucide-react
 import { Link } from 'react-router-dom';
 import { AnimatePresence, motion } from 'framer-motion';
 import { siteConfig } from '../../data/config';
+import logo from '../../assets/trans_web_logo.png';
 
 // Map icon strings to available Lucide components
 const IconMap: Record<string, LucideIcon> = {
@@ -38,10 +39,13 @@ export const Footer: React.FC = () => {
     <footer className="bg-forest-900 dark:bg-forest-950 text-linen-100 py-16 px-6 md:px-12 transition-colors duration-300 relative">
       <div className="max-w-7xl mx-auto flex flex-col md:grid md:grid-cols-3 gap-12 items-center">
         {/* Left: Branding */}
-        <div className="flex flex-col gap-1 text-center md:text-left">
-          <span className="font-serif text-lg md:text-2xl font-medium tracking-tight">
-            {siteConfig.ownerName}
-          </span>
+        <div className="flex flex-col items-center md:items-start gap-4 text-center md:text-left">
+          <div className="flex items-center gap-3">
+            <img src={logo} alt="" className="w-12 h-12 md:w-16 md:h-16 object-contain drop-shadow-md" />
+            <span className="font-serif text-lg md:text-2xl font-medium tracking-tight">
+              {siteConfig.ownerName}
+            </span>
+          </div>
           <p className="text-xs md:text-sm text-linen-100/60 font-light max-w-xs mx-auto md:mx-0 leading-relaxed">
             {siteConfig.tagline}
           </p>

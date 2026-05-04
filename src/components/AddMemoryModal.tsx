@@ -12,7 +12,7 @@ interface AddMemoryModalProps {
   onSuccess: (entry: JournalEntry) => void;
 }
 
-const AVAILABLE_TAGS = ['mountains', 'forest', 'water', 'golden hour', 'snow', 'solo'];
+const AVAILABLE_TAGS = ['mountains', 'forest', 'water', 'golden hour', 'snow', 'solo', 'straylife', 'slowtravel', 'rainvibes', 'silentmoments', 'rawmoments', 'dawn'];
 
 export const AddMemoryModal: React.FC<AddMemoryModalProps> = ({ isOpen, onClose, onSuccess }) => {
   const { accessToken } = useAuth();

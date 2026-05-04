@@ -7,6 +7,7 @@ import { siteConfig } from '../../data/config';
 import { useTheme } from '../../hooks/useTheme';
 import { useAuth } from '../../context/AuthContext';
 import { cn } from '../../utils/cn';
+import logo from '../../assets/trans_web_logo.png';
 
 const navLinks = [
   { name: 'Home', path: '/' },
@@ -33,9 +34,12 @@ export const Header: React.FC = () => {
               {/* Logo */}
               <Link 
                 to="/" 
-                className="font-serif text-xl md:text-2xl text-forest-900 dark:text-linen-50 hover:opacity-80 transition-opacity focus-visible:ring-2 focus-visible:ring-forest-400 focus-visible:outline-none rounded-lg"
+                className="flex items-center gap-2.5 hover:opacity-80 transition-opacity focus-visible:ring-2 focus-visible:ring-forest-400 focus-visible:outline-none rounded-lg"
               >
-                {siteConfig.ownerName}
+                <img src={logo} alt="" className="w-10 h-10 md:w-12 md:h-12 object-contain drop-shadow-sm" />
+                <span className="font-serif text-xl md:text-2xl text-forest-900 dark:text-linen-50">
+                  {siteConfig.ownerName}
+                </span>
               </Link>
 
               {/* Desktop Navigation */}
